@@ -1,6 +1,5 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -22,7 +21,7 @@ model Customer {
 
 model Invoice {
   id          Int           @id @default(autoincrement())
-  customer_id Int           @unique
+  customer_id Int
   customer    Customer      @relation(fields: [customer_id], references: [id])
   amount      Decimal
   currency    String
@@ -34,7 +33,7 @@ model Invoice {
 
 model Payment {
   id         Int      @id @default(autoincrement())
-  invoice_id Int      @unique
+  invoice_id Int
   amount     Decimal
   paid_at    DateTime
   invoice    Invoice  @relation(fields: [invoice_id], references: [id])
