@@ -32,7 +32,7 @@
     <!-- Right: Amount + Status -->
     <div class="invoice-amount">
       <span class="amount-label">AMOUNT</span>
-      <span class="amount-value">${{ formatAmount(invoice.amount) }}</span>
+      <span class="amount-value">{{ currencySymbol(invoice.currency) }}{{ formatAmount(invoice.amount) }}</span>
       <span :class="['status-badge', statusClass(invoice.status)]">
         {{ invoice.status }}
       </span>
@@ -51,6 +51,19 @@ defineProps({
 
 const formatAmount = (amount) =>
   amount != null ? Number(amount).toLocaleString('en-US') : '0'
+
+const currencySymbol = (currency) => {
+  const map = {
+    USD: '$',
+    CAD: 'CAD$',
+    EUR: '€',
+    GBP: '£',
+    JPY: 'JPY¥',
+    CNY: 'CNY¥',
+    AUD: 'AUD$',
+  }
+  return map[currency] || currency || '$'
+}
 
 const statusClass = (status) => {
   const map = {

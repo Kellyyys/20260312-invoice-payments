@@ -86,7 +86,7 @@
 
       <template v-else-if="error">
         <div class="state-msg">
-          <p class="text-red-400 text-sm">⚠ Failed to load invoices. Make sure your backend is running on port 5000.</p>
+          <p class="text-red-400 text-sm">Invalid Input</p>
         </div>
       </template>
 
