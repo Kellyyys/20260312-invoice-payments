@@ -12,6 +12,7 @@ app.get('/api/health', (req,res) => {
 })
 
 app.use('/api/invoices', require('./routes/invoiceRoutes'))
+app.use('/api/customers', require('./routes/customerRoutes'))
 
 const PORT = process.env.PORT || 5000
 

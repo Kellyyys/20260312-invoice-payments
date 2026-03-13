@@ -2,7 +2,7 @@ const customerService = require('../services/customerService')
 
 async function getInvoicesByCustomerId(req, res, next) {
     try {
-        const invoices = await customerService.getInvoicesByCustomerId(req.params.id);
+        const invoices = await customerService.getInvoicesByCustomerId(req.params.customerId);
         return res.status(200).json(invoices);
     } catch (error) {
         return next(error);
