@@ -66,3 +66,26 @@ async function createInvoice(data) {
     return formatInvoice(invoice);
 }
 
+
+// helper function to format inovice for response
+function formatInvoice(invoice) {
+    const totalPaid = (invoice.payments || []).reduce(
+        (sum, payment) => sum + Number(payment.amount),
+        0
+    );
+
+    const invoiceAmount = Number(invoice.amount);
+
+    return {
+        ...invoice,
+        amount: invoiceAmount,
+        payments: (invoice.payments || []).map((payment) => ({
+        ...payment,
+        amount: Number(payment.amount),
+        })),
+        total_paid: totalPaid,
+        remaining_balance: invoiceAmount - totalPaid,
+    };
+}
+
+
