@@ -11,6 +11,8 @@ app.get('/api/health', (req,res) => {
     res.json({ message:'API is running' })
 })
 
+app.use('/api/invoices', require('./routes/invoiceRoutes'))
+
 const PORT = process.env.PORT || 5000
 
 app.listen(PORT, () => {

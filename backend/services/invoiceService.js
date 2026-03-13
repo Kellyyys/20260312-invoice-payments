@@ -25,7 +25,7 @@ async function createInvoice(data) {
     const currency = data.currency
     const issued_at = data.issued_at
     const due_at = data.due_at
-    const status = data.status || 'pending'
+    const status = data.status || 'PENDING'
 
     // Validate input fields
     if (!customer_id || Number.isNaN(customer_id)) {
@@ -60,10 +60,19 @@ async function createInvoice(data) {
         throw notFound('Customer not found');
     }
 
+    // temporary workaround for broken invoice id sequence
+    const lastInvoice = await prisma.invoice.findFirst({
+        orderBy: { id: 'desc' },
+        select: { id: true },
+    });
+
+    const nextInvoiceId = lastInvoice ? lastInvoice.id + 1 : 1;
+
     const invoice = await prisma.invoice.create({
         data: {
+            id: nextInvoiceId,
             customer_id,
-            amount: toDecimal(amount),
+            amount: new Prisma.Decimal(amount),
             currency,
             issued_at: new Date(issued_at),
             due_at: new Date(due_at),
@@ -110,6 +119,7 @@ async function recordPayment(id, data) {
         where: { id: invoice_id },
         include: {
             customer: true,
+            payments: true,
         },
     });
 
@@ -146,12 +156,21 @@ async function recordPayment(id, data) {
         throw conflict('Payment would exceed invoice amount');
     }
 
+    // temporary workaround for broken invoice id sequence
+    const lastPayment = await prisma.payment.findFirst({
+        orderBy: { id: 'desc' },
+        select: { id: true },
+    });
+
+    const nextPaymentId = lastPayment ? lastPayment.id + 1 : 1;
+
     // payment recording and invoice status update if fully paid
     const payment = await prisma.payment.create({
         data: {
-        invoice_id: invoice_id,
-        amount: new Prisma.Decimal(amount),
-        paid_at: paid_at ? new Date(paid_at) : new Date(),
+            id: nextPaymentId,
+            invoice_id: invoice_id,
+            amount: new Prisma.Decimal(amount),
+            paid_at: paid_at ? new Date(paid_at) : new Date(),
         },
     });
 
@@ -166,6 +185,48 @@ async function recordPayment(id, data) {
         ...payment,
         amount: Number(payment.amount),
     };
+}
+
+async function getAllInvoices(query) {
+    const where = {};
+
+    if (query.status) {
+        where.status = query.status;
+    }
+
+    if (query.customer_id) {
+        const customerId = Number(query.customer_id);
+        if (!customerId || Number.isNaN(customerId)) {
+            throw badRequest('customer_id must be a valid integer');
+        }
+        where.customer_id = customerId;
+    }
+    
+    // date range filtering
+    if (query.from || query.to) {
+        where.issued_at = {};
+
+        if (query.from) {
+        where.issued_at.gte = new Date(query.from);
+        }
+
+        if (query.to) {
+        where.issued_at.lte = new Date(query.to);
+        }
+    }
+
+    const invoices = await prisma.invoice.findMany({
+        where,
+        include: {
+            customer: true,
+            payments: true,
+        },
+        orderBy: {
+            issued_at: 'desc',
+        },
+    });
+    
+    return invoices.map(formatInvoice);
 }
 
 // helper function to format inovice for response
@@ -188,3 +249,10 @@ function formatInvoice(invoice) {
         remaining_balance: invoiceAmount - totalPaid,
     };
 }
+
+module.exports = {
+  createInvoice,
+  getInvoiceById,
+  recordPayment,
+  getAllInvoices,
+};
