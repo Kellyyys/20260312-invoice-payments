@@ -7,6 +7,18 @@ function badRequest(message) {
     return err;
 }
 
+function notFound(message) {
+    const err = new Error(message);
+    err.statusCode = 404;
+    return err;
+}
+
+function conflict(message) {
+    const err = new Error(message);
+    err.statusCode = 409;
+    return err;
+}
+
 async function createInvoice(data) {
     const customer_id = Number(data.customer_id)
     const amount = data.amount
@@ -66,6 +78,95 @@ async function createInvoice(data) {
     return formatInvoice(invoice);
 }
 
+async function getInvoiceById(id) {
+    const invoice_id = Number(id)
+
+    if (!invoice_id ||Number.isNaN(invoice_id)) {
+        throw badRequest('Invalid invoice ID');
+    }
+
+    const invoice = await prisma.invoice.findUnique({
+        where: { id: invoice_id },
+        include: {
+            customer: true,
+        },
+    });
+
+    if (!invoice) {
+        throw notFound('Invoice not found');
+    }
+
+    return formatInvoice(invoice);
+}
+
+async function recordPayment(id, data) {
+    const invoice_id = Number(id)
+
+    if (!invoice_id || Number.isNaN(invoice_id)) {
+        throw badRequest('Invalid invoice ID');
+    }
+
+    const invoice = await prisma.invoice.findUnique({
+        where: { id: invoice_id },
+        include: {
+            customer: true,
+        },
+    });
+
+    // check if invoice exists
+    if (!invoice) {
+        throw notFound('Invoice not found');
+    }
+    // check if invoice is already paid or void
+    if (invoice.status === 'PAID' || invoice.status === 'VOID') {
+        throw conflict('Cannot record payment for a PAID or VOID invoice');
+    }
+
+    // payment validation
+    const amount = data.amount;
+    const paid_at = data.paid_at;
+
+    if(!amount || Number(amount) <= 0) {
+        throw badRequest('amount must be a positive number');
+    }
+
+    if (!paid_at) {
+        throw badRequest('paid_at is required');
+    }
+
+    const currentPaid = invoice.payments.reduce(
+        (sum, payment) => sum + Number(payment.amount),
+        0
+    );
+
+    const invoiceAmount = Number(invoice.amount);
+    const nextTotalPaid = currentPaid + Number(amount);
+
+    if (nextTotalPaid > invoiceAmount) {
+        throw conflict('Payment would exceed invoice amount');
+    }
+
+    // payment recording and invoice status update if fully paid
+    const payment = await prisma.payment.create({
+        data: {
+        invoice_id: invoice_id,
+        amount: new Prisma.Decimal(amount),
+        paid_at: paid_at ? new Date(paid_at) : new Date(),
+        },
+    });
+
+    if (nextTotalPaid === invoiceAmount) {
+        await prisma.invoice.update({
+        where: { id: invoice_id },
+        data: { status: 'PAID' },
+        });
+    }
+
+    return {
+        ...payment,
+        amount: Number(payment.amount),
+    };
+}
 
 // helper function to format inovice for response
 function formatInvoice(invoice) {
@@ -87,5 +188,3 @@ function formatInvoice(invoice) {
         remaining_balance: invoiceAmount - totalPaid,
     };
 }
-
-
