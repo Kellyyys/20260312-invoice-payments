@@ -98,6 +98,7 @@ async function getInvoiceById(id) {
         where: { id: invoice_id },
         include: {
             customer: true,
+            payments: true,
         },
     });
 
