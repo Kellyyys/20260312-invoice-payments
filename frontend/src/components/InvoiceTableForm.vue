@@ -1,5 +1,5 @@
 <template>
-  <div class="invoice-card">
+  <div class="invoice-card" @click="emit('click')">
 
     <!-- Left: Customer info -->
     <div class="invoice-col">
@@ -48,6 +48,8 @@ defineProps({
     required: true
   }
 })
+
+const emit = defineEmits(['click'])
 
 const formatAmount = (amount) =>
   amount != null ? Number(amount).toLocaleString('en-US') : '0'

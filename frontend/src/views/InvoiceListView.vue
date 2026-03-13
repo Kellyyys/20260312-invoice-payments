@@ -101,6 +101,7 @@
           v-for="invoice in invoices"
           :key="invoice.id"
           :invoice="invoice"
+          @click="router.push(`/invoices/${invoice.id}`)"
         />
       </template>
 
@@ -110,12 +111,14 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import DatePicker from 'primevue/datepicker'
 import Select from 'primevue/select'
 import InvoiceTableForm from '@/components/InvoiceTableForm.vue'
 import { getAllInvoices } from '@/api/invoices'
 
 // ── UI state (what the user is currently typing / picking) ─────────────────
+const router         = useRouter()
 const searchInput    = ref('')
 const dateFrom       = ref(null)
 const dateTo         = ref(null)
