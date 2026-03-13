@@ -241,6 +241,8 @@ function formatInvoice(invoice) {
     return {
         ...invoice,
         amount: invoiceAmount,
+        issued_at: invoice.issued_at.toISOString().split("T")[0],
+        due_at: invoice.due_at.toISOString().split("T")[0],
         payments: (invoice.payments || []).map((payment) => ({
         ...payment,
         amount: Number(payment.amount),

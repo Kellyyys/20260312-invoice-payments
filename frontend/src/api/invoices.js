@@ -4,8 +4,8 @@ const api = axios.create({
   baseURL: 'http://localhost:5000/api',
 })
 
-export async function getInvoices() {
-  const response = await api.get('/invoices')
+export async function getAllInvoices(params = {}) {
+  const response = await api.get('/invoices', { params })
   return response.data
 }
 
