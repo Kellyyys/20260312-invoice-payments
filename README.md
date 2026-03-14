@@ -1,8 +1,8 @@
-# Take-Home Assignment — Invoice Status & Payments
+# Invoice Manager
 
 ## About This website
 
-At eCapital, we build fintech services using microservices and relational databases. This is a small full-stack application for managing invoices and payments — a simplified version of the kind of work our engineering team does every day.
+This is a small full-stack application for managing invoices and payments — a simplified version of the kind of work our engineering team does every day.
 
 ---
 
@@ -58,7 +58,31 @@ Prisma Client
 PostgreSQL Database
 
 ### File Structure
-**TBD**
+
+20260312-invoice-payments/
+├── frontend/
+│   ├── src/
+│   │   ├── api/
+│   │   ├── components/
+│   │   ├── views/
+│   │   ├── router/
+│   │   ├── App.vue
+│   │   ├── main.css 
+│   │   └── main.js
+│   ├── package.json
+│   └── vite.config.js
+└── backend/
+    ├── prisma/
+    │   ├── schema.prisma
+    │   ├── seed.js
+    │   └── seed-data.json
+    ├── routes/
+    ├── controllers/
+    ├── services/
+    ├── utils/
+    ├── server.js
+    ├── prisma.config.ts
+    └── package.json
 
 ---
 
@@ -115,21 +139,13 @@ The **list endpoint** should support query parameters for filtering:
 - When `sum(payments) == invoice.amount`, the invoice status should transition to `PAID`
 - A `VOID` or `PAID` invoice should not accept new payments
 
-### Front-End UI
-
-- List all invoices with: customer name, amount (currency-formatted), status, issued date, and due date
-- View invoice details including a breakdown of payments
-- Create a new invoice
-- Record a payment against an invoice
-- Filter invoices by status and/or customer
-- Add validations as necessary
-
 ---
 
 ## Setup Instructions
 ### prerequisites
-- Node.js
+- Node.js v20.19.0 or v22.12.0+
 - npm
+- PostgreSQL
 
 ### Clone the repository
 ```bash
@@ -149,11 +165,17 @@ npm run dev
 cd backend
 npm install
 ```
+Create PostgreSQL database on your local end (this project does not use cloud database like Mongodb Atlas, so local database is required)
+```bash
+createdb invoice_payments_db
+```
 In your local **.env** file, add:
 ```bash
 PORT=5000
-DATABASE_URL=TBD
+DATABASE_URL="postgresql://YOUR_USERNAME:YOUR_PASSWORD@localhost:5432/invoice_payments_db?schema=public"
 ```
+Note: YOUR_USERNAME can be found by running "whoami" in terminal
+
 Database migration
 ```bash
 npx prisma migrate dev
