@@ -44,6 +44,7 @@ The system demonstrates:
 ## Architecture Overview
 
 The system follows a layered architecture:
+```
 Frontend (Vue)
         │
         │ HTTP API
@@ -56,9 +57,11 @@ Prisma Client
         │
         ▼
 PostgreSQL Database
+```
 
 ### File Structure
 
+```
 20260312-invoice-payments/
 ├── frontend/
 │   ├── src/
@@ -83,6 +86,7 @@ PostgreSQL Database
     ├── server.js
     ├── prisma.config.ts
     └── package.json
+```
 
 ---
 
