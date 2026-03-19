@@ -13,6 +13,10 @@ app.get('/api/health', (req,res) => {
 
 app.use('/api/invoices', require('./routes/invoiceRoutes'))
 app.use('/api/customers', require('./routes/customerRoutes'))
+app.use((err, req, res, next) => {
+  const status = err.statusCode || 500
+  res.status(status).json({ message: err.message })
+})
 
 const PORT = process.env.PORT || 5000
 

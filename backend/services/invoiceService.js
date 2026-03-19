@@ -1,23 +1,6 @@
 const prisma = require('../utils/prisma');
 const { Prisma } = require('@prisma/client');
-
-function badRequest(message) {
-    const err = new Error(message);
-    err.statusCode = 400;
-    return err;
-}
-
-function notFound(message) {
-    const err = new Error(message);
-    err.statusCode = 404;
-    return err;
-}
-
-function conflict(message) {
-    const err = new Error(message);
-    err.statusCode = 409;
-    return err;
-}
+const { badRequest, notFound, conflict } = require('../utils/errorHandler');
 
 async function createInvoice(data) {
     const customer_id = Number(data.customer_id)
