@@ -99,28 +99,11 @@ async function recordPayment(id, data) {
         throw badRequest('Invalid invoice ID');
     }
 
-    const invoice = await prisma.invoice.findUnique({
-        where: { id: invoice_id },
-        include: {
-            customer: true,
-            payments: true,
-        },
-    });
-
-    // check if invoice exists
-    if (!invoice) {
-        throw notFound('Invoice not found');
-    }
-    // check if invoice is already paid or void
-    if (invoice.status === 'PAID' || invoice.status === 'VOID') {
-        throw conflict('Cannot record payment for a PAID or VOID invoice');
-    }
-
-    // payment validation
+    // payment validation (done outside transaction — no DB cost)
     const amount = data.amount;
     const paid_at = data.paid_at;
 
-    if(!amount || Number(amount) <= 0) {
+    if (!amount || Number(amount) <= 0) {
         throw badRequest('amount must be a positive number');
     }
 
@@ -128,47 +111,73 @@ async function recordPayment(id, data) {
         throw badRequest('paid_at is required');
     }
 
-    const currentPaid = invoice.payments.reduce(
-        (sum, payment) => sum + Number(payment.amount),
-        0
-    );
+    // CONCURRENCY: wrap everything in a transaction with SELECT FOR UPDATE.
+    // This acquires a PostgreSQL row-level lock on the invoice row, forcing
+    // any concurrent payment request for the same invoice to wait until this
+    // transaction commits or rolls back — preventing double-counting.
+    return await prisma.$transaction(async (tx) => {
+        // Lock the invoice row for the duration of this transaction
+        const rows = await tx.$queryRaw`
+            SELECT * FROM "Invoice" WHERE id = ${invoice_id} FOR UPDATE
+        `;
+        const invoice = rows[0];
 
-    const invoiceAmount = Number(invoice.amount);
-    const nextTotalPaid = currentPaid + Number(amount);
+        // check if invoice exists
+        if (!invoice) {
+            throw notFound('Invoice not found');
+        }
+        // check if invoice is already paid or void
+        if (invoice.status === 'PAID' || invoice.status === 'VOID') {
+            throw conflict('Cannot record payment for a PAID or VOID invoice');
+        }
 
-    if (nextTotalPaid > invoiceAmount) {
-        throw conflict('Payment would exceed invoice amount');
-    }
-
-    // temporary workaround for broken invoice id sequence
-    const lastPayment = await prisma.payment.findFirst({
-        orderBy: { id: 'desc' },
-        select: { id: true },
-    });
-
-    const nextPaymentId = lastPayment ? lastPayment.id + 1 : 1;
-
-    // payment recording and invoice status update if fully paid
-    const payment = await prisma.payment.create({
-        data: {
-            id: nextPaymentId,
-            invoice_id: invoice_id,
-            amount: new Prisma.Decimal(amount),
-            paid_at: paid_at ? new Date(paid_at) : new Date(),
-        },
-    });
-
-    if (nextTotalPaid === invoiceAmount) {
-        await prisma.invoice.update({
-        where: { id: invoice_id },
-        data: { status: 'PAID' },
+        // fetch payments inside the transaction so totals are accurate
+        const payments = await tx.payment.findMany({
+            where: { invoice_id },
         });
-    }
 
-    return {
-        ...payment,
-        amount: Number(payment.amount),
-    };
+        const currentPaid = payments.reduce(
+            (sum, payment) => sum + Number(payment.amount),
+            0
+        );
+
+        const invoiceAmount = Number(invoice.amount);
+        const nextTotalPaid = currentPaid + Number(amount);
+
+        if (nextTotalPaid > invoiceAmount) {
+            throw conflict('Payment would exceed invoice amount');
+        }
+
+        // temporary workaround for broken invoice id sequence
+        const lastPayment = await tx.payment.findFirst({
+            orderBy: { id: 'desc' },
+            select: { id: true },
+        });
+
+        const nextPaymentId = lastPayment ? lastPayment.id + 1 : 1;
+
+        // payment recording and invoice status update if fully paid
+        const payment = await tx.payment.create({
+            data: {
+                id: nextPaymentId,
+                invoice_id: invoice_id,
+                amount: new Prisma.Decimal(amount),
+                paid_at: paid_at ? new Date(paid_at) : new Date(),
+            },
+        });
+
+        if (nextTotalPaid === invoiceAmount) {
+            await tx.invoice.update({
+                where: { id: invoice_id },
+                data: { status: 'PAID' },
+            });
+        }
+
+        return {
+            ...payment,
+            amount: Number(payment.amount),
+        };
+    });
 }
 
 async function getAllInvoices(query) {
