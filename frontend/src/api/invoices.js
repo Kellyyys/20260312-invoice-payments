@@ -33,3 +33,8 @@ export async function getAllCustomers() {
   const response = await api.get('/customers')
   return response.data
 }
+
+export async function createCustomer(body) {
+  const response = await api.post('/customers', body)
+  return response.data
+}

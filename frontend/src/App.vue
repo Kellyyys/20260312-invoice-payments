@@ -4,23 +4,27 @@
     <div class="navbar-inner">
       <RouterLink to="/" class="navbar-brand">📄 Invoice Manager</RouterLink>
 
-      <!-- "+" on list page, "✕" on create page -->
-      <RouterLink
-        v-if="!isCreatePage"
-        to="/invoices/new"
-        class="action-btn"
-        title="Create new invoice"
-      >
-        +
-      </RouterLink>
-      <RouterLink
-        v-else
-        to="/"
-        class="action-btn"
-        title="Back to list"
-      >
-        ✕
-      </RouterLink>
+      <!-- Two buttons wrapper -->
+      <div class="flex items-center space-x-4">
+        <RouterLink to="/customers/new" class="signup-btn">New Customer Sign Up</RouterLink>
+        <!-- "+" on list page, "✕" on create page -->
+        <RouterLink
+          v-if="!isInvoiceCreatePage && !isCustomerCreatePage"
+          to="/invoices/new"
+          class="action-btn"
+          title="Create new invoice"
+        >
+          +
+        </RouterLink>
+        <RouterLink
+          v-else
+          to="/"
+          class="action-btn"
+          title="Back to list"
+        >
+          ✕
+        </RouterLink>
+      </div>
     </div>
   </nav>
 
@@ -35,7 +39,8 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
-const isCreatePage = computed(() => route.name === 'InvoiceCreate')
+const isInvoiceCreatePage = computed(() => route.name === 'InvoiceCreate')
+const isCustomerCreatePage = computed(() => route.name === 'CustomerCreate')
 </script>
 
 <style scoped>
@@ -45,6 +50,12 @@ const isCreatePage = computed(() => route.name === 'InvoiceCreate')
 .navbar-inner { @apply mx-auto max-w-6xl px-6 py-4 flex items-center justify-between; }
 .navbar-brand {
   @apply text-lg font-bold text-gray-800 tracking-tight;
+  text-decoration: none;
+}
+
+.signup-btn {
+  @apply py-2 px-4 rounded-lg bg-gray-400 text-white font-bold text-sm
+         hover:bg-gray-700 transition-colors duration-150;
   text-decoration: none;
 }
 

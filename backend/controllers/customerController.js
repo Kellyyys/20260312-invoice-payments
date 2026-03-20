@@ -18,7 +18,17 @@ async function getAllCustomers(req, res, next) {
     }
 }
 
+async function createCustomer(req, res, next) {
+    try {
+        const newCustomer = await customerService.createCustomer(req.body);
+        return res.status(201).json(newCustomer);
+    } catch (error) {
+        return next(error);
+    }
+}
+
 module.exports = {
     getInvoicesByCustomerId,
     getAllCustomers,
+    createCustomer,
 }
