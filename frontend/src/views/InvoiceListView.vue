@@ -47,16 +47,29 @@
         </div>
       </div>
 
-      <!-- Status Dropdown -->
-      <Select
-        v-model="selectedStatus"
-        :options="statusOptions"
-        placeholder="Status"
-        showClear
-        class="w-44"
-        @change="applyStatusFilter"
-        @clear="applyStatusFilter"
-      />
+      <div class="drop-down">
+        <!-- currency Dropdown -->
+        <Select
+          v-model="selectedCurrency"
+          :options="currencyOptions"
+          placeholder="Currency"
+          showClear
+          class="w-44"
+          @change="applyCurrencyFilter"
+          @clear="applyCurrencyFilter"
+        />
+
+        <!-- Status Dropdown -->
+        <Select
+          v-model="selectedStatus"
+          :options="statusOptions"
+          placeholder="Status"
+          showClear
+          class="w-44"
+          @change="applyStatusFilter"
+          @clear="applyStatusFilter"
+        />
+      </div>
     </div>
 
     <!-- Active filters summary -->
@@ -72,6 +85,10 @@
       </span>
       <span v-if="appliedStatus" class="filter-tag">
         Status: {{ appliedStatus }}
+        <button @click="clearStatus">✕</button>
+      </span>
+      <span v-if="appliedCurrency" class="filter-tag">
+        Currency: {{ appliedCurrency }}
         <button @click="clearStatus">✕</button>
       </span>
       <button class="clear-all-btn" @click="clearAll">Clear all</button>
@@ -123,12 +140,14 @@ const searchInput    = ref('')
 const dateFrom       = ref(null)
 const dateTo         = ref(null)
 const selectedStatus = ref(null)
+const selectedCurrency = ref(null)
 
 // ── Applied state (what has actually been sent to the backend) ─────────────
 const appliedCustomerId = ref('')
 const appliedFrom       = ref(null)
 const appliedTo         = ref(null)
 const appliedStatus     = ref(null)
+const appliedCurrency   = ref(null)
 
 // ── Data ───────────────────────────────────────────────────────────────────
 const invoices = ref([])
@@ -136,6 +155,7 @@ const loading  = ref(false)
 const error    = ref(false)
 
 const statusOptions = ['PENDING', 'PAID', 'VOID', 'DRAFT']
+const currencyOptions = ['USD', 'CAD', 'EUR', 'GBP', 'JPY', 'CNY', 'AUD']
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const formatDate = (d) => {
@@ -146,7 +166,7 @@ const formatDate = (d) => {
 }
 
 const hasActiveFilters = computed(() =>
-  !!appliedCustomerId.value || !!appliedFrom.value || !!appliedTo.value || !!appliedStatus.value
+  !!appliedCustomerId.value || !!appliedFrom.value || !!appliedTo.value || !!appliedStatus.value || !!appliedCurrency.value
 )
 
 // ── Fetch ──────────────────────────────────────────────────────────────────
@@ -159,6 +179,7 @@ const fetchInvoices = async () => {
     if (appliedFrom.value)       params.from        = appliedFrom.value
     if (appliedTo.value)         params.to          = appliedTo.value
     if (appliedStatus.value)     params.status      = appliedStatus.value
+    if (appliedCurrency.value)   params.currency    = appliedCurrency.value
 
     invoices.value = await getAllInvoices(params)
   } catch (err) {
@@ -188,6 +209,11 @@ const applyStatusFilter = () => {
   fetchInvoices()
 }
 
+const applyCurrencyFilter = () => {
+  appliedCurrency.value = selectedCurrency.value ?? null
+  fetchInvoices()
+}
+
 // ── Clear helpers ──────────────────────────────────────────────────────────
 const clearCustomerId = () => {
   searchInput.value       = ''
@@ -209,15 +235,23 @@ const clearStatus = () => {
   fetchInvoices()
 }
 
+const clearCurrency = () => {
+  selectedCurrency.value = null
+  appliedCurrency.value  = null
+  fetchInvoices()
+}
+
 const clearAll = () => {
   searchInput.value       = ''
   dateFrom.value          = null
   dateTo.value            = null
   selectedStatus.value    = null
+  selectedCurrency.value  = null
   appliedCustomerId.value = ''
   appliedFrom.value       = null
   appliedTo.value         = null
   appliedStatus.value     = null
+  appliedCurrency.value   = null
   fetchInvoices()
 }
 </script>
@@ -246,6 +280,7 @@ const clearAll = () => {
 /* ── Filters ── */
 .filters-row { @apply flex items-end justify-between gap-4 flex-wrap; }
 .date-group  { @apply flex flex-col gap-1; }
+.drop-down   { @apply flex gap-1; }
 .date-label  { @apply text-sm font-semibold text-gray-700; }
 .date-inputs { @apply flex items-center gap-2; }
 .date-sep    { @apply text-gray-400 font-bold; }
