@@ -208,6 +208,11 @@ async function getAllInvoices(query) {
         }
     }
 
+    // Currency filtering
+    if (query.currency) {
+        where.currency = query.currency
+    }
+
     const invoices = await prisma.invoice.findMany({
         where,
         include: {
